@@ -37,7 +37,9 @@ function App() {
         onChange={(e) => setSearch(e.target.value)}
       />
 
-      <h1>Game Explorer</h1>
+      <h2 style={{ textAlign: "center" }}>
+      🎮 Game Explorer
+      </h2>
 
       <div className="games">
         {filteredGames.map((game) => (
