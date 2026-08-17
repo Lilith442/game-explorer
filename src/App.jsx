@@ -3,56 +3,139 @@ import { useEffect, useState } from "react";
 function App() {
   const [games, setGames] = useState([]);
   const [search, setSearch] = useState("");
+  const [genre, setGenre] = useState("All");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [page, setPage] = useState(1);
-
-  const filteredGames = games.filter((game) =>
-    game.name.toLowerCase().includes(search.toLowerCase())
-  );
 
   useEffect(() => {
-  fetch(`https://api.rawg.io/api/games?key=90397a5572154d60969070c2c1d04b91&page=${page}`)
-    .then((res) => res.json())
-    .then((data) => {
-      setGames((prev) => [...prev, ...data.results]);
-      setLoading(false);
-    })
-    .catch(() => {
-      setError("Bir hata oluştu");
-      setLoading(false);
-    });
-}, [page]);
+    fetch("https://www.freetogame.com/api/games")
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("API bağlantısı başarısız");
+        }
 
-  // ✅ BURASI ÖNEMLİ
-  if (loading) return <p>Yükleniyor...</p>;
-  if (error) return <p>{error}</p>;
+        return res.json();
+      })
+      .then((data) => {
+        setGames(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        setError("Oyunlar yüklenirken bir hata oluştu.");
+        setLoading(false);
+      });
+  }, []);
+
+  const genres = [
+    "All",
+    ...new Set(
+      games
+        .map((game) => game.genre)
+        .filter(Boolean)
+    ),
+  ];
+
+  const filteredGames = games.filter((game) => {
+    const matchesSearch = game.title
+      .toLowerCase()
+      .includes(search.toLowerCase());
+
+    const matchesGenre =
+      genre === "All" || game.genre === genre;
+
+    return matchesSearch && matchesGenre;
+  });
+
+  if (loading) {
+    return (
+      <div className="status">
+        <p>🎮 Oyunlar yükleniyor...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="status error">
+        <p>⚠️ {error}</p>
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <input
-        type="text"
-        placeholder="Oyun Ara"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
+    <div className="app">
+      <header className="header">
+        <h1 className="game-header-logo">
+          <img
+            src="/game-explorer-logo.png"
+            alt="Free Game Explorer"
+          />
+        </h1>
 
-      <h2 style={{ textAlign: "center" }}>
-      🎮 Game Explorer
-      </h2>
+        <p>
+          Free-to-play oyunları keşfet, ara ve incele.
+        </p>
 
-      <div className="games">
-        {filteredGames.map((game) => (
-          <div className="game-card" key={game.id}>
-            <img src={game.background_image} alt={game.name} />
-            <h3>{game.name}</h3>
-            <p>Rating: {game.rating}</p>
+        <div className="controls">
+          <input
+            type="text"
+            placeholder="Oyun ara..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+
+          <select
+            value={genre}
+            onChange={(e) => setGenre(e.target.value)}
+          >
+            {genres.map((item) => (
+              <option key={item} value={item}>
+                {item === "All" ? "Tüm Türler" : item}
+              </option>
+            ))}
+          </select>
+        </div>
+      </header>
+
+      <main className="games">
+        {filteredGames.length > 0 ? (
+          filteredGames.map((game) => (
+            <article className="game-card" key={game.id}>
+              <img
+                src={game.thumbnail}
+                alt={game.title}
+              />
+
+              <div className="game-info">
+                <h2>{game.title}</h2>
+
+                <p>
+                  <strong>Tür:</strong>{" "}
+                  {game.genre || "Belirtilmemiş"}
+                </p>
+
+                <p>
+                  <strong>Platform:</strong>{" "}
+                  {game.platform || "Belirtilmemiş"}
+                </p>
+
+                <a
+                  href={game.game_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="game-btn"
+                >
+                  Oyunu İncele →
+                </a>
+              </div>
+            </article>
+          ))
+        ) : (
+          <div className="no-results">
+            <p>🔍 Aradığın kriterlere uygun oyun bulunamadı.</p>
           </div>
-        ))}
-      </div>
-      <button onClick={() => setPage(page + 1)}>
-         Daha fazla yükle
-      </button>
+        )}
+      </main>
     </div>
   );
 }
